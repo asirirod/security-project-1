@@ -1,11 +1,8 @@
-import hashlib
-import os
 import json, pprint
-import base64
+import base64, binascii, os
 import pbkdf2
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA 
-import binascii
 
 class FileManager():
 
@@ -17,37 +14,40 @@ class FileManager():
 	############  User Functions  ############
 
 	def create_user(self, username, password):
-		salt = "SALT"
+		salt = "salt"
 		user_data = {
-			"salted_password": hashlib.sha512(password + salt).hexdigest(),
+			"salted_password": self.generate_PBKDF2_key(password, salt),
 			"encrypted_role_private_keys": [],
 	        "salt": salt
 		}
 
 		self.users[username] = user_data
 
-		#user_data["encrypted_role_private_keys"].append(role_name + ":" + role_private_key)
-
-		# self.create_role(role_name, role_private_key) 
-		# self.add_user_to_role(username, role_name, role_private_key)
-
-	def add_user_to_role(self, username, role_name, role_private_key):
+	def add_user_to_role(self, username, role_name):
 		# Add new role to user data
-		# self.users[username]["roles"][role_name] = role_private_key
-		self.users[username]["encrypted_role_private_keys"].append(role_name + ":" + role_private_key)
+		role_info = role_name + ":" + self.get_role_public_key(role_name)
+		encrypted_info = self.encrypt_with_AES(self.users[username]['salted_password'], role_info)
+		self.users[username]["encrypted_role_private_keys"].append(encrypted_info)
 
 		# Add new user to role data
 		self.roles[role_name]['users'].append(username)
 
+	def get_user_role(self):
+		pass
+
 	############  Role Functions  ############
 
-	def create_role(self, role_name, role_public_key):
-		self.roles[role_name] = {}
-		self.roles[role_name]['public_key'] = role_public_key
-		self.roles[role_name]['users'] = []
+	def create_role(self, role_name):
+		role_data = {
+			"key" : self.generate_RSA_Key(),    # Get Private Key
+			"users" : []
+		}
 
-	def get_role_key(self, role_name):
-		return self.roles[role_name]['public_key']
+		self.roles[role_name] = role_data
+
+	def get_role_public_key(self, role_name):
+		key = RSA.importKey(self.roles[role_name]['key'])
+		return key.publickey().exportKey()
 
 	def unlock_role(self, username, password, role):
 		pass
@@ -115,9 +115,9 @@ class FileManager():
 
 	def generate_RSA_Key(self, bits=1024):
 		rsa_key = RSA.generate(bits)
-		public_key = rsa_key.publickey().exportKey("PEM")
-		private_key = rsa_key.exportKey("PEM")
-		return rsa_key.publickey(), rsa_key
+		# public_key = rsa_key.publickey().exportKey("PEM")
+		# private_key = rsa_key.exportKey("PEM")
+		return rsa_key.exportKey("PEM")
 
 	def encrypt_with_RSA_key(self, key, message):
 		encoded_msg = key.encrypt(message, None)[0]
@@ -131,27 +131,37 @@ class FileManager():
 		print "RSA decoded msg is '%s'" % msg
 		return msg
 
-	# with open('filename.txt', 'r') as handle:
- #    parsed = json.load(handle)
+	############  File Functions  ############
+
+	def write_data_to_file(self, filename, data):
+		with open(filename, 'w') as outfile:
+			json.dump(data, outfile, indent=4, sort_keys=True)
+
+	def read_data_from_file(self, filename):
+		with open(filename, 'r') as handle:
+			parsed = json.load(handle)
+
+		return parsed
 
 if __name__ == '__main__':
 
 	filemgr = FileManager();
 
-	filemgr.create_role("beginner", "r1k")
-	filemgr.create_role("intermediate", "r2k")
-	filemgr.create_role("advanced", "r3k")
+	filemgr.create_role("beginner")
+	filemgr.create_role("intermediate")
+	filemgr.create_role("advanced")
 
 	filemgr.create_user("joe", "joe")
 	filemgr.create_user("bob", "bob")
 	filemgr.create_user("bill", "bill")
 
-	filemgr.add_user_to_role("bob", "beginner", "r1k")
+	filemgr.add_user_to_role("bob", "beginner")
 
 	# Print info
 	print "Users: %s\n" % json.dumps(filemgr.users, indent=4, sort_keys=True)
 	print "Roles: %s\n" % json.dumps(filemgr.roles, indent=4, sort_keys=True)
 
+	exit()
 
 	print "\n================= PBKDF2 ================\n"
 
@@ -166,13 +176,19 @@ if __name__ == '__main__':
 	print "Plain: %s" % pt
 
 	print "\n================= RSA ================\n"
-	pub, priv = filemgr.generate_RSA_Key()
-	print pub.exportKey("PEM")
-	print priv.exportKey("PEM")
+	priv = filemgr.generate_RSA_Key()
+	print priv
+	pk = RSA.importKey(priv)
+	print pk.publickey().exportKey("PEM")
 
-	enc = filemgr.encrypt_with_RSA_key(pub, "THIS IS MY SECRET MESSAGE")
+	enc = filemgr.encrypt_with_RSA_key(pk, "THIS IS MY SECRET MESSAGE")
 
-	filemgr.decrypt_with_RSA_key(priv, enc)
+	filemgr.decrypt_with_RSA_key(pk, enc)
+
+	print "\n================= FILE I/O ================\n"
+	filemgr.write_data_to_file("test.txt", filemgr.users)
+	d = filemgr.read_data_from_file("test.txt")
+	print "D: %s" % json.dumps(d, indent=4, sort_keys=True)
 
 	loop = 0
 	while loop == 1:
