@@ -1,0 +1,8 @@
+{
+    "new.txt": {
+        "keys": {
+            "beginner": "KQaGF0jBTaLtpUz1vVPkYDzut2expWQS83igMo+zwknRwg5rBnXFWvwENNtmApb/4Bsq7IWGnftM\n36meXZpfb8xuBhmDBJ6P3zXQPCkvFUj3W5Y8798SR13+6k5OaOAhvzaOBjEbrcq2m4UE7bkdCmmW\ncWQqmWnBaF/IgFPqvZU=\n"
+        }, 
+        "mac": "R5ZhCfTKa4is+NS52u4fPA==\n"
+    }
+}

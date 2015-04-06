@@ -1,0 +1,15 @@
+{
+    "beginner": {
+        "key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyT9Y964Xp6dTfS+huHk/oSf6b\npLYQId9daqZJRXpqTlKkwSlQXCH6KIqQ8z3C4m56OumjRrgTjurDWOlNBN2cj4kP\nbayj3Rs8BFRfsujww8N4GqVywurDMLRZjmxeI+KLNIu8rHKNZYmbzuFFXlhhWK31\nIT22khnlxeaaB0kHTwIDAQAB\n-----END PUBLIC KEY-----", 
+        "users": [
+            "root", 
+            "bob"
+        ]
+    }, 
+    "intermediate": {
+        "key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC9MWYIxybt01klMFS2wZsnvTGi\nX3rTiXk6RqM8Kqup0SLLlNdBTXGHDj8AWR5umi+DAUDiFJSWjY6po0UqaDGHmJAG\n9s05kr5wavojwVwoU1MrfDAaD36GOA34+4HAZwoWUkRAR5elN0jVTr5qMUZNT8N7\nX8RIUnSCAw3F3iCJGQIDAQAB\n-----END PUBLIC KEY-----", 
+        "users": [
+            "root"
+        ]
+    }
+}
