@@ -1,4 +1,4 @@
-import traceback
+import traceback, getpass
 import json, pprint
 import base64, binascii, os
 import pbkdf2
@@ -17,17 +17,25 @@ class FileManager():
 	############  User Functions  ############
 
 	def create_user(self, username, password):
-		salt = "salt"
+		# TODO: return false if user already exists
+		if username in self.users.keys():
+			print "\nUser %s already exists." % username
+			False
+		# TODO: return false if password or username is empty
+		if len(username)==0 or len(password)==0:
+			print "\nUsername and password cannot be empty."
+			return False
+
+		salt = os.urandom(8)
 		user_data = {
 			"salted_password": self.generate_PBKDF2_key(password, salt),
 			"encrypted_role_private_keys": [],
 			# "password": password,
-	        "salt": salt
+	        "salt": salt,
+	        "salt2": os.urandom(8)
 		}
 
 		self.users[username] = user_data
-
-		# TODO: return false if user already exists
 
 		return True
 
@@ -38,7 +46,8 @@ class FileManager():
 		if not role_private_key: print "Access Denied to role '%s'." % role_name; return False
 		role_info = role_name + ":" + role_private_key
 
-		password_key = self.generate_PBKDF2_key(password, self.users[username]['salt'])
+		# TODO: Use a new salt.
+		password_key = self.generate_PBKDF2_key(password, self.users[username]['salt2'])
 		encrypted_info = self.encrypt_with_AES(password_key, role_info)	# self.users[username]['salted_password']
 		self.users[username]["encrypted_role_private_keys"].append(encrypted_info)
 
@@ -52,7 +61,7 @@ class FileManager():
 		print "Adding Key %s" % role_private_key.exportKey("PEM")
 		role_info = role_name + ":" + role_private_key.exportKey("PEM")
 
-		password_key = self.generate_PBKDF2_key(password, self.users[root_username]['salt'])
+		password_key = self.generate_PBKDF2_key(password, self.users[root_username]['salt2'])
 		encrypted_info = self.encrypt_with_AES(password_key, role_info)
 		self.users[root_username]["encrypted_role_private_keys"].append(encrypted_info)
 
@@ -63,17 +72,17 @@ class FileManager():
 
 	def get_role_private_key(self, username, password, role_name):
 		encrypted_role_keys = self.users[username]["encrypted_role_private_keys"]
-		password_key = self.generate_PBKDF2_key(password, self.users[username]['salt'])
+		password_key = self.generate_PBKDF2_key(password, self.users[username]['salt2'])
 		for encrypted_role_key in encrypted_role_keys:
 			decrypted_string = self.decrypt_with_AES(password_key, encrypted_role_key)
-			print "role %s" %decrypted_string.split(":")[0]
+			# if self.debug: print "decrypted string: %s" % decrypted_string
 			if (role_name == decrypted_string.split(":")[0]):
 				return decrypted_string.split(":")[1]
 		return None
 
 	def get_user_roles(self, username, password):
 		encrypted_role_keys = self.users[username]["encrypted_role_private_keys"]
-		password_key = self.generate_PBKDF2_key(password, self.users[username]['salt'])
+		password_key = self.generate_PBKDF2_key(password, self.users[username]['salt2'])
 		roles = []
 		for encrypted_role_key in encrypted_role_keys:
 			decrypted_string = self.decrypt_with_AES(password_key, encrypted_role_key)
@@ -82,7 +91,7 @@ class FileManager():
 
 	def unlock_role(self, username, password, role_name):
 		encrypted_role_keys = self.users[username]["encrypted_role_private_keys"]
-		password_key = self.generate_PBKDF2_key(password, self.users[username]['salt'])
+		password_key = self.generate_PBKDF2_key(password, self.users[username]['salt2'])
 		for encrypted_role_key in encrypted_role_keys:
 			decrypted_string = self.decrypt_with_AES(password_key, encrypted_role_key)
 			if (role_name == decrypted_string.split(":")[0]):
@@ -90,11 +99,15 @@ class FileManager():
 		return None
 
 	def login(self, username, password):
-		salted_password = self.generate_PBKDF2_key(password, self.users['root']['salt'])
-		if self.debug: print "Given:    '%s'" % salted_password
-		if self.debug: print "Expected: '%s'" % self.users[username]['salted_password']
-		if salted_password == self.users[username]['salted_password']:
-			return True
+		try:
+			salted_password = self.generate_PBKDF2_key(password, self.users['root']['salt'])
+			if self.debug: print "Given:    '%s'" % salted_password
+			if self.debug: print "Expected: '%s'" % self.users[username]['salted_password']
+			if salted_password == self.users[username]['salted_password']:
+				return True
+		except KeyError:
+			print "\nUser %s does not exist." % username
+			return False
 		return False
 
 	############  Role Functions  ############
@@ -170,22 +183,27 @@ class FileManager():
 		if self.files[filename]['mac'] != mac:
 			print "File content has been corrupted."
 			return None
+		else:
+			if self.debug: print "Verified file content."
 
 		return file_content
 
-	def add_role_to_file(self, filename, role_name, role_public_key):
-		# file_keys = self.files[filename]['keys'][role_name]
-		# decrypted_keys = self.decrypt_with_RSA_key(RSA.importKey(unlock_role_key), file_keys)
-		# file_key_1 = decrypted_keys.split(":")[0]
-		# file_key_2 = decrypted_keys.split(":")[1]
+	def add_role_to_file(self, filename, role_name, role_private_key, new_role_name, new_role_public_key):
+		print "\n%s, %s, %s, %s, %s" % (filename, role_name, role_private_key, new_role_name, new_role_public_key)
+		# Decrypt file encrypted keys for current role
+		file_keys = self.files[filename]['keys'][role_name]
+		if self.debug: print "file keys: %s" % file_keys
+		decrypted_keys = self.decrypt_with_RSA_key(RSA.importKey(role_private_key), file_keys)
+		if self.debug: print "decrypted keys: %s" % decrypted_keys
+		file_key_1 = decrypted_keys.split(":")[0]
+		file_key_2 = decrypted_keys.split(":")[1]
 
-		# role_public_key = RSA.importKey(role_public_key)
+		# Encrypt file keys with new role's public key
+		new_role_public_key = RSA.importKey(new_role_public_key)
+		encrypted_keys = self.encrypt_with_RSA_key(new_role_public_key, file_key_1 + ":" + file_key_2)
 
-		# encrypted_content = self.encrypt_with_AES(file_key_1, content)
-		# mac = hmac.new(file_key_2, data).digest().encode("base64")
-		# encrypted_keys = self.encrypt_with_RSA_key(role_public_key, file_key_1 + ":" + file_key_2)
-
-		# self.files[filename]['keys'][role_name] = encrypted_keys
+		# Add new role to files key list
+		self.files[filename]['keys'][new_role_name] = encrypted_keys
 		return True
 
 	############  Key Functions  ############
@@ -267,26 +285,26 @@ class FileManager():
 
 if __name__ == '__main__':
 
-	debug = 1;
+	debug = 0;
 
 	filemgr = FileManager(debug);
 
-	filemgr.users = filemgr.read_data_from_file("users.txt")
-	filemgr.files = filemgr.read_data_from_file("files.txt")
-	filemgr.roles = filemgr.read_data_from_file("roles.txt")
+	# filemgr.users = filemgr.read_data_from_file("users.txt")
+	# filemgr.files = filemgr.read_data_from_file("files.txt")
+	# filemgr.roles = filemgr.read_data_from_file("roles.txt")
 
 	# # Create Root account and give permissions.
-	# filemgr.create_user("root", "root")
+	filemgr.create_user("root", "root")
 
-	# filemgr.create_role("beginner")
-	# filemgr.create_role("intermediate")
+	filemgr.create_role("beginner")
+	filemgr.create_role("intermediate")
 	# filemgr.create_role("advanced")
 
-	# filemgr.add_user_to_role("root", "root", "beginner")
-	# filemgr.add_user_to_role("root", "root", "intermediate")
+	filemgr.add_user_to_role("root", "root", "root", "root", "beginner")
+	filemgr.add_user_to_role("root", "root", "root", "root", "intermediate")
 	# filemgr.add_user_to_role("root", "root", "advanced")
 
-	# # filemgr.create_user("bob", "bob")
+	# filemgr.create_user("bob", "bob")
 	# # filemgr.create_user("bill", "bill")
 
 	# # filemgr.add_user_to_role("bob", "bob", "beginner")
@@ -339,12 +357,12 @@ if __name__ == '__main__':
 
 	# filemgr.write_data_to_file("files.txt", filemgr.files)
 	# filemgr.files = filemgr.read_data_from_file("files.txt")
-	# print "FILES: %s" % json.dumps(filemgr.files, indent=4, sort_keys=True)
+	# print "FILES: %s" % json.dumps(filemgr.files, indent=4, sort_keys=True)	
 
 	loop = 1
 	state = "init"
 	options = {
-		"init": "1: Login as Root\n 2: Login as User\n 3: Show all Users\n 4: Show all Roles\n 5: Save\n 6: Save & Exit",
+		"init": "1: Login as Root\n 2: Login as User\n 3: Show all Users\n 4: Show all Roles\n 5: Save\n 6: Save & Exit\n 7: Exit without Saving",
 		"root": "1: Create User\n 2: Create Role\n 3: Add User to Role\n 4: Logout",
 		"user": "1: Unlock Role\n 2: Lock Role \n 3: View assigned Roles\n 4: View users of Role\n 5: Create new file\n 6: Read file\n 7: Add Role to File\n 8: Logout"
 	}
@@ -371,27 +389,26 @@ if __name__ == '__main__':
 			if state == "init":
 				if selection == 1:
 					print "\nLogging in as Root"
-					password_string = "\nPassword: "
-					password = raw_input(password_string)
+					password = getpass.getpass()
 					if(filemgr.login("root", password)):
 						# If pass
 						active_user = "root"
 						state = "root"
-						print "Successfully logged in as '%s'." % active_user
+						print "\nSuccessfully logged in as '%s'." % active_user
 					else:
-						print "Failed to validate login."
+						print "\nFailed to validate login."
 				elif selection == 2:
 					print "\nLogin as User"
 					username = raw_input("\nUsername: ")
-					password = raw_input("Password: ")
+					password = getpass.getpass()
 					if(filemgr.login(username, password)):
 						password = None
 						# If pass
 						active_user = username
 						state = "user"
-						print "Successfully logged in as '%s'." % active_user
+						print "\nSuccessfully logged in as '%s'." % active_user
 					else:
-						print "Failed to validate login."
+						print "\nFailed to validate login."
 				elif selection == 3:
 					print "\nShow all Users"
 					print "\nUsers: %s" % ', '.join(filemgr.users.keys())
@@ -409,26 +426,29 @@ if __name__ == '__main__':
 					filemgr.write_data_to_file("roles.txt", filemgr.roles)
 					filemgr.write_data_to_file("files.txt", filemgr.files)
 					exit()
+				elif selection == 7:
+					print("\nExiting without saving\n");
+					exit()
 
 			elif state == "root":
 				if selection == 1:
 					print "\nCreate User"
 					username = raw_input("\nUsername: ")
-					password = raw_input("Password: ")
+					password = getpass.getpass()
 					if(filemgr.create_user(username, password)):
 						password = None
-						print "Successfully created user."	
+						print "\nSuccessfully created user."	
 						if debug: print "Users: %s\n" % json.dumps(filemgr.users, indent=4, sort_keys=True)
 					else:
-						print "Failed to create user."	
+						print "\nFailed to create user."	
 				elif selection == 2:
 					print "\nCreate Role"
 					role_name = raw_input("\nRole Name: ")
 					if(filemgr.create_role(role_name)):
-						print "Successflly created role."	
+						print "\nSuccessflly created role."	
 						if debug: print "Roles: %s\n" % json.dumps(filemgr.roles, indent=4, sort_keys=True)
 					else:
-						print "Failed to create role."	
+						print "\nFailed to create role."	
 				elif selection == 3:
 					print "\nAdd User to Role"
 					root_password  = raw_input("\nRoot password: ")
@@ -437,11 +457,11 @@ if __name__ == '__main__':
 					role_name = raw_input("Role Name: ")
 					if(filemgr.add_user_to_role(active_user, root_password, username, password, role_name)):
 						password = None
-						print "Successflly added user to role."	
+						print "\nSuccessflly added user to role."	
 						if debug: print "Users: %s\n" % json.dumps(filemgr.users, indent=4, sort_keys=True)
 						if debug: print "Roles: %s\n" % json.dumps(filemgr.roles, indent=4, sort_keys=True)
 					else:
-						print "Failed to add user to role."	
+						print "\nFailed to add user to role."	
 				elif selection == 4:
 					active_user = None
 					print("\nLogging out");
@@ -451,7 +471,7 @@ if __name__ == '__main__':
 				if selection == 1:
 					print "\nUnlock Role"
 					role_name = raw_input("Name of Role to unlock: ")
-					password = raw_input("Please re-enter password: ")
+					password = getpass.getpass()
 					role = filemgr.unlock_role(active_user, password, role_name)
 					password = None
 					if(role):
@@ -470,10 +490,10 @@ if __name__ == '__main__':
 						else: 
 							unlocked_roles_list = "None"
 					else:
-						print "Specified role is not unlocked."
+						print "\nSpecified role is not unlocked."
 				elif selection == 3:
 					print "\nView assigned Roles"
-					password = raw_input("Please re-enter password: ")
+					password = getpass.getpass()
 					roles = filemgr.get_user_roles(active_user, password)
 					password = None
 					print "\nRoles: %s" % ', '.join(roles)
@@ -492,7 +512,7 @@ if __name__ == '__main__':
 
 					# Verify Role is unlocked
 					if role_name in unlocked_roles:
-						print "Role Users: %s" % ', '.join(unlocked_roles[role_name])
+						print "\nRole Users: %s" % ', '.join(unlocked_roles[role_name])
 					else:
 						print "\nPlease unlock role '%s' to access create a new file." % role_name
 						continue
@@ -502,13 +522,13 @@ if __name__ == '__main__':
 						print "\nSuccessflly created file."	
 						if debug: print "Files: %s\n" % json.dumps(filemgr.files, indent=4, sort_keys=True)
 					else:
-						print "Failed to create file."	
+						print "\nFailed to create file."	
 				elif selection == 6:
 					print "\nRead file"
 					password   = raw_input("Password: ")
 					filename   = raw_input("Filename: ")
 					if filename not in filemgr.files.keys():
-						print "Specified file not found."
+						print "\nSpecified file not found."
 						continue
 					if debug: print filemgr.files
 					file_roles = filemgr.files[filename]['keys'].keys()
@@ -519,12 +539,33 @@ if __name__ == '__main__':
 					if role_name:
 						role_private_key = filemgr.get_role_private_key(active_user, password, role_name)
 						content = filemgr.read_file(filename, role_name, role_private_key)
-						print "File Content: \n%s\n" % content
+						print "\nFile Content: \n\n%s" % content
 					else:
 						print "\nFailed to read file.\nNone of the roles associated with file %s have been unlocked." % filename
 
 				elif selection == 7:
 					print "\nAdd Role to File"
+					password       = raw_input("Password: ")
+					new_role_name  = raw_input("New Role: ")
+					role_private_key = filemgr.get_role_private_key(active_user, password, role_name)
+					password = None
+					filename   = raw_input("Filename: ")
+					# Look for any of the existing roles associated with the files in the unlocked role list.
+					role_name = None
+					for file_role in filemgr.files[filename]['keys'].keys():
+						if file_role in unlocked_roles.keys():
+							role_name = file_role
+					if not role_name: print "\nNone of the roles associated with file %s have been unlocked."; continue;
+
+					# Get role to be assigned to file
+					if new_role_name not in unlocked_roles.keys(): print "\nRole (%s) has not been unlocked. Please unlock to proceed." % new_role_name; continue;
+
+					if filemgr.add_role_to_file(filename, role_name, role_private_key, new_role_name, unlocked_roles[new_role_name]['key']):
+						role_private_key = None
+						print "\nSuccessfully added role '%s' to file '%s'." % (new_role_name, filename)
+						if debug: print "Files: %s\n" % json.dumps(filemgr.files, indent=4, sort_keys=True)
+					else:
+						print "\nFailed to add role '%s' to file '%s'." % (new_role_name, filename)
 				elif selection == 8:
 					# Clear active Users
 					active_user = None

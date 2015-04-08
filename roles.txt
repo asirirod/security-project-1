@@ -9,7 +9,8 @@
     "intermediate": {
         "key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC9MWYIxybt01klMFS2wZsnvTGi\nX3rTiXk6RqM8Kqup0SLLlNdBTXGHDj8AWR5umi+DAUDiFJSWjY6po0UqaDGHmJAG\n9s05kr5wavojwVwoU1MrfDAaD36GOA34+4HAZwoWUkRAR5elN0jVTr5qMUZNT8N7\nX8RIUnSCAw3F3iCJGQIDAQAB\n-----END PUBLIC KEY-----", 
         "users": [
-            "root"
+            "root", 
+            "bob"
         ]
     }
 }
