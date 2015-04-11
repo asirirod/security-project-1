@@ -1,9 +1,9 @@
-argparse==1.2.1
 cffi==0.9.2
 cryptography==0.8.1
 enum34==1.0.4
+hashlib==20081119
+pbkdf2==1.3
 pyasn1==0.1.7
 pycparser==2.10
 pycrypto==2.6.1
 six==1.9.0
-wsgiref==0.1.2
