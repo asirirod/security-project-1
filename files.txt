@@ -1,8 +1,8 @@
 {
     "new.txt": {
         "keys": {
-            "beginner": "KQaGF0jBTaLtpUz1vVPkYDzut2expWQS83igMo+zwknRwg5rBnXFWvwENNtmApb/4Bsq7IWGnftM\n36meXZpfb8xuBhmDBJ6P3zXQPCkvFUj3W5Y8798SR13+6k5OaOAhvzaOBjEbrcq2m4UE7bkdCmmW\ncWQqmWnBaF/IgFPqvZU=\n"
+            "beginner": "eUDWiwPwO3/uSWkDMWlW0WPi9gHwdC1Kis/+vnR/Q2Q8n81M/kD++Ju8rERaAH/+TDkQOMloG3j8\nwODjRDZSU0oilMn9rJAw5hu2oYlwQtAhsHFYAJRsjWqDZ8aJ2DJhezUD3bUqWwfjC8hqfOW097rg\nVG4HiEhb7uQZhj3ZUiA=\n"
         }, 
-        "mac": "R5ZhCfTKa4is+NS52u4fPA==\n"
+        "mac": "RTFjAFU0fGKMVr/anifa+Q==\n"
     }
 }

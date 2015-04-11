@@ -1,16 +1,15 @@
 {
     "beginner": {
-        "key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCyT9Y964Xp6dTfS+huHk/oSf6b\npLYQId9daqZJRXpqTlKkwSlQXCH6KIqQ8z3C4m56OumjRrgTjurDWOlNBN2cj4kP\nbayj3Rs8BFRfsujww8N4GqVywurDMLRZjmxeI+KLNIu8rHKNZYmbzuFFXlhhWK31\nIT22khnlxeaaB0kHTwIDAQAB\n-----END PUBLIC KEY-----", 
+        "key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC5FcjtsVzwMGgvcmq9vdyrLiuH\nUW/4jMNuWYr/Y8hjmDHIOZl+T/M54e3i/Lagt6rOE4J+EHkl1CcoBB/5ztIgWpYX\nk3QyIavqURHIPVsAtAIc2xFIo2bBxIVy3UGsTRSAGX/O+k8ni0LH0WtFV6bXzaER\nkLl1TfBA22JDjTB1GQIDAQAB\n-----END PUBLIC KEY-----", 
         "users": [
             "root", 
             "bob"
         ]
     }, 
     "intermediate": {
-        "key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC9MWYIxybt01klMFS2wZsnvTGi\nX3rTiXk6RqM8Kqup0SLLlNdBTXGHDj8AWR5umi+DAUDiFJSWjY6po0UqaDGHmJAG\n9s05kr5wavojwVwoU1MrfDAaD36GOA34+4HAZwoWUkRAR5elN0jVTr5qMUZNT8N7\nX8RIUnSCAw3F3iCJGQIDAQAB\n-----END PUBLIC KEY-----", 
+        "key": "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCkDOnaSbt9Ult8OJgaIM5kSYQ7\nK5u9krKlWEnhSjunY/aCpu+hhz9WYucWwuUOBTLkFhI2mQ7MW2Q1wHt6x/ujJh8L\n46uctYx7uxBcxYAKdRFgnk7vls1DdxkS6xUe4y/lIGoTH7dWzoxY86VABS+2Tc/i\nJ8NUQJK1AFnAWz8jiwIDAQAB\n-----END PUBLIC KEY-----", 
         "users": [
-            "root", 
-            "bob"
+            "root"
         ]
     }
 }
